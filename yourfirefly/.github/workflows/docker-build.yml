@@ -1,21 +1,16 @@
 name: Build and Push Docker image then run the Container
-
 on:
   push:
     branches:
-      - main # Triggered when something is pushed to main
-
+      - main
 jobs:
   build:
-    runs-on: windows-latest #OS can be changed if yours varies
-
-    steps: # each name is a new step in progression
+    runs-on: windows-latest
+    steps:
       - name: Checkout code
         uses: actions/checkout@v3
-
       - name: Setup Docker Buildx
         uses: docker/setup-buildx-action@v2
-
       - name: Cache Docker layers
         uses: actions/cache@v3
         with:
@@ -23,44 +18,34 @@ jobs:
           key: ${{ runner.os }}-buildx-${{ github.sha }}
           restore-keys: |
             ${{ runner.os }}-buildx-
-
-        #write your own microservice name mine is flass now
-        - name: Build Docker image
-          run: |
-            docker build -f Dockerfile.txt -t yourfirefly .
-
-        - name: Docker Hub Login
-          env:
-            DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
-            DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
-          run: |
-            echo "${DOCKER_PASSWORD}" | docker login -u "${DOCKER_USERNAME}" --password-stdin
-
-        - name: Push Docker image
-            run: |
-              docker tag myflass ${{ secrets.DOCKER_USERNAME }}/yourfirefly:latest
-              docker push ${{ secrets.DOCKER_USERNAME }}/yourfirefly:latest
-# This Step removes the existing container and builds from scratch everytime a change is made
-        - name: Stop existing container if it exists
-            run: |
-              if [ "$(docker ps -q -f name=myflass)" ]; then
-                docker stop myflass
-              fi
-
-        - name: Remove existing container if it exists
-             run: |
-               if [ "$(docker ps -aq -f name=myflass)" ]; then
-                 docker rm myflass
-              fi
-
-
-        - name: Run Docker Container
-            run: |
-              docker run -d -p 4000:80 --name myflass yourfirefly
-
-        - name: Verify 
-            run: |
-              docker ps
-              docker logs myflass
-      
-      
+      - name: Build Docker image
+        run: |
+          docker build -f Dockerfile.txt -t yourfirefly .
+      - name: Docker Hub Login
+        env:
+          DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
+          DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
+        run: >
+          echo "${DOCKER_PASSWORD}" | docker login -u "${DOCKER_USERNAME}"
+          --password-stdin
+      - name: Push Docker image
+        run: |
+          docker tag myflass ${{ secrets.DOCKER_USERNAME }}/yourfirefly:latest
+          docker push ${{ secrets.DOCKER_USERNAME }}/yourfirefly:latest
+      - name: Stop existing container if it exists
+        run: |
+          if [ "$(docker ps -q -f name=myflass)" ]; then
+            docker stop myflass
+          fi
+      - name: Remove existing container if it exists
+        run: |
+          if [ "$(docker ps -aq -f name=myflass)" ]; then
+               docker rm myflass
+          fi
+      - name: Run Docker Container
+        run: |
+          docker run -d -p 4000:80 --name myflass yourfirefly
+      - name: Verify
+        run: |
+          docker ps
+          docker logs myflass
